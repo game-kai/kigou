@@ -1,0 +1,62 @@
+/* 横長 */
+@media (min-aspect-ratio: 3/4) {
+    main {
+        inline-size: calc(100svh * 3 / 4);
+        block-size: 100svh;
+    }
+}
+
+/* 縦長 */
+@media (max-aspect-ratio: 3/4) {
+    main {
+        inline-size: 100svw;
+        block-size: calc(100svw * 4 / 3);
+    }
+}
+
+.none {
+    display: none;
+    pointer-events: none;
+}
+
+canvas {
+    inline-size: 100%;
+    block-size: 100%;
+    image-rendering: pixelated;
+    cursor: pointer;
+}
+
+/* 全体 */
+body {
+    background-color: #000;
+    color: #FFF;
+    inline-size: 100%;
+    block-size: 100%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+}
+html {
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    inline-size: 100%;
+    block-size: 100%;
+    overflow: hidden;
+}
+
+/* すべて */
+* {
+    touch-action: manipulation;
+    margin: 0;
+    padding: 0;
+    border-style: none;
+    font-weight: normal;
+    font-family: sans-serif;
+    font-size: 1em;
+    line-height: 1em;
+    word-spacing: 0;
+    box-sizing: border-box;
+    outline: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
