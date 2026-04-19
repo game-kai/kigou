@@ -167,7 +167,6 @@ const Audio = class {
     #oscillatorNode = [];
 
     #isStarted = false; // 開始済み
-    #isOn = false; // 有効
     #frequency = []; // 音の高さから周波数への変換
 
     // 初期化
@@ -177,23 +176,24 @@ const Audio = class {
         let nextFreq = Math.pow(2, 1 / 12);
         let f;
         f = 440;
-        for (let n = 49; n < 128; n++) {
+        for (let n = 45; n < 128; n++) {
             this.#frequency[n] = f;
             f *= nextFreq;
         }
         f = 440;
-        for (let n = 49; n >= 0; n--) {
+        for (let n = 45; n >= 0; n--) {
             this.#frequency[n] = f;
             f /= nextFreq;
         }
     }
 
-    start (noteNum) {
+    // 同時に出せるチャンネル数を渡して音声開始
+    start (channelNum) {
         if(this.#isStarted) return false;
 
         this.#audioContext = new AudioContext();
 
-        for(let n = 0; n < noteNum; n++) {
+        for(let n = 0; n < channelNum; n++) {
             this.#oscillatorNode[n] = this.#audioContext.createOscillator();
             this.#oscillatorNode[n].type = "sine";
 
@@ -218,54 +218,34 @@ const Audio = class {
         this.#isStarted = s;
     }
 
-    // 有効化
-    on () {
-        this.#isOn = true;
-    }
-
-    // 無効化
-    off () {
-        this.#isOn = false;
-        this.stop();
-    }
-
-    // 有効かどうか
-    get isOn () {
-        return this.#isOn;
-    }
-
     // 鳴らす
-    play (note = [51]) {
+    play (channel = 0, notes = [51], delay = 0, interval = 0.2) {
         if(!this.#isStarted) return;
-        if(!this.#isOn) return;
 
-        const currentTime = this.#audioContext.currentTime;
+        const ct = this.#audioContext.currentTime;
 
-        for(let n = note.length; n < this.#oscillatorNode.length; n++) {
-            const v = this.#gainNode[n].gain.value;
-            this.#gainNode[n].gain.cancelScheduledValues(currentTime);
-            this.#gainNode[n].gain.setValueAtTime(v, currentTime);
-            this.#gainNode[n].gain.linearRampToValueAtTime(0, currentTime + 0.1);
-        }
-
-        for(let n = 0; n < note.length; n++) {
-            const v = this.#gainNode[n].gain.value;
-            this.#oscillatorNode[n].frequency.setValueAtTime(this.#frequency[note[n]], currentTime);
-            this.#gainNode[n].gain.setValueAtTime(v, currentTime);
-            this.#gainNode[n].gain.linearRampToValueAtTime(0.2, currentTime + 0.1);
+        for(let n = 0; n < notes.length; n++) {
+            if(notes[n] < 0) continue;
+            const v = 0.5;
+            const t = ct + delay;
+            this.#oscillatorNode[channel].frequency.setValueAtTime(this.#frequency[notes[n]], t + n * interval);
+            this.#gainNode[channel].gain.setValueAtTime(0, t + n * interval);
+            this.#gainNode[channel].gain.linearRampToValueAtTime(v, t + 0.002 + n * interval);
+            this.#gainNode[channel].gain.setValueAtTime(v, t - 0.002 + (n + 1) * interval);
+            this.#gainNode[channel].gain.linearRampToValueAtTime(0, t + (n + 1) * interval);
         }
     }
 
     // 止める
     stop () {
         if(!this.#isStarted) return;
-        
+            
         const currentTime = this.#audioContext.currentTime;
-        for(let n = 0; n < this.#oscillatorNode.length; n++) {
-            const v = this.#gainNode[n].gain.value;
-            this.#gainNode[n].gain.cancelScheduledValues(currentTime);
-            this.#gainNode[n].gain.setValueAtTime(v, currentTime);
-            this.#gainNode[n].gain.linearRampToValueAtTime(0, currentTime + 0.1);
+        for(let c = 0; c < this.#oscillatorNode.length; c++) {
+            const v = this.#gainNode[c].gain.value;
+            this.#gainNode[c].gain.cancelScheduledValues(currentTime);
+            this.#gainNode[c].gain.setValueAtTime(v, currentTime);
+            this.#gainNode[c].gain.linearRampToValueAtTime(0, currentTime + 0.1);
         }
     }
 }

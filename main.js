@@ -22,10 +22,15 @@ const script = (event) => {
     colorSprite[8] = new ColorImage(spriteImage, [[255, 255, 255, 255], [255, 51, 255, 255]]);
     colorSprite[9] = new ColorImage(spriteImage, [[255, 255, 255, 255], [153, 153, 153, 255]]);
 
+    let audio = new Audio(); // 音声
     let state = 'title';
+    let prevCountdown = 0;
     let countdown = 0;
     let stage = 0;
     let highscore = 0;
+    let notes = [];
+    let speed = 1;
+    const speedUp = 1.01;
     const kigou = {
         div : 3,
         scroll: {
@@ -40,22 +45,31 @@ const script = (event) => {
     };
 
     // 処理
-    const proc = (deltaTime) => {
-        if(countdown > 0) countdown -= deltaTime;
+    const proc = (deltaTime, time) => {
+        if(countdown > 0) countdown -= deltaTime * speed;
         else countdown = 0;
+
         if(state === 'ready') {
+            // 1秒未満になったら
+            if(countdown < 1 && prevCountdown >= 1) {
+                randomMusic(0, countdown, 1);
+            }
+            // カウントが0になったらゲーム開始
             if(countdown <= 0) {
                 state = 'game';
-                countdown = 7.999;
+                countdown += 8;
                 initStage();
             }
         }
         else if(state === 'game') {
-            kigou.scroll.loop += deltaTime / 8;
+            kigou.scroll.loop += deltaTime / 8 * speed;
             while (kigou.scroll.loop > 1) kigou.scroll.loop--;
             if(countdown <= 0) {
                 state = 'end';
-                countdown = 4.9;
+                countdown += 5;
+                speed = 1;
+                const scale = (stage * 5) % 12;
+                audio.play(1, [24 + scale], 0, 1);
                 if(stage > highscore) highscore = stage;
                 clean();
             }
@@ -68,11 +82,13 @@ const script = (event) => {
         else if(state === 'clear') {
             if(countdown <= 0) {
                 state = 'game';
-                countdown = 7.9;
+                countdown += 8;
                 stage++;
+                speed *= speedUp;
                 initStage();
             }
         }
+        prevCountdown = countdown;
     };
 
     // 正解以外の記号を消す
@@ -248,7 +264,7 @@ const script = (event) => {
             for(let i = 0; i < 3; i++) drawKigou(i + 5 + 9 * 8, 9, 0 + i, 11); // OK!
         }
         if(state === 'ready' || state === 'game' || state === 'clear') {
-            drawKigou(Math.floor(countdown) + 11 * 8, 9, 4, 9); // カウントダウン
+            drawKigou(Math.floor(Math.min(countdown, 7)) + 11 * 8, 9, 4, 9); // カウントダウン
         }
         if(state === 'game' || state === 'clear' || state === 'end') {
             let col = kigou.goal.color;
@@ -264,15 +280,18 @@ const script = (event) => {
     };
 
     // フレーム
-    let prevTimestamp = 0; // 前回フレームのタイムスタンプ
-    const frame = (timestamp) => {
+    let prevTime = 0; // 前回フレームのタイムスタンプ
+    let startTime = 0;
+    const frame = (t) => {
         if(pause) return;
         requestAnimationFrame(frame);
-        if(prevTimestamp === 0) prevTimestamp = timestamp;
-        const deltaTime = (timestamp - prevTimestamp) / 1000;
-        proc(deltaTime); // 処理
+        const time = t / 1000;
+        if(startTime === 0) startTime = time;
+        if(prevTime === 0) prevTime = time;
+        const deltaTime = time - prevTime;
+        proc(deltaTime, time - startTime); // 処理
         draw(); // 描画
-        prevTimestamp = timestamp;
+        prevTime = time;
     };
     let pause = (document.visibilityState === 'hidden');
     if(!pause) requestAnimationFrame(frame);
@@ -465,12 +484,8 @@ const script = (event) => {
 
     // キャンバスを押した
     canvas.addEventListener('pointerdown', (event) => {
-        if(state === 'title') {
-            state = 'ready';
-            stage = 0;
-            countdown = 2.999;
-        }
-        else if(state === 'game') {
+        let c = null;
+        if(state === 'game' || state === 'clear') {
             // 座標0-1
             const canvasRect = canvas.getBoundingClientRect();
             const x = (event.clientX - canvasRect.left) / canvasRect.width;
@@ -495,19 +510,88 @@ const script = (event) => {
             while(my < 0) my++;
 
             // どのキャラか
-            const c = Math.floor(mx * kigou.div) + Math.floor(my * kigou.div) * kigou.div;
+            c = Math.floor(mx * kigou.div) + Math.floor(my * kigou.div) * kigou.div;
+        }
+        const note = (stage * 5) % 12;
+
+        if(state === 'game') {
 
             // 押した
             if(kigou.array[c].char === kigou.goal.char) {
-                clean();
                 // 正解
+                clean();
                 state = 'clear';
+                randomSound(stage, 0, 1);
+                randomMusic(
+                    stage + 1,
+                    countdown / speed,
+                    speed * speedUp
+                );
             } else {
+                if(kigou.array[c].char == null) return;
                 kigou.array[c].char = null; // 違う記号なら消す
+                randomSound(stage, 0, 0);
+            }
+        }
+        else if(state === 'clear') {
+            // 正解をもう一度押した
+            if(kigou.array[c].char === kigou.goal.char) {
+                randomSound(stage, 0, 1);
             }
         }
         else if(state === 'end') {
-            if(countdown <= 0) state = 'title';
+            if(countdown <= 0) {
+                state = 'title';
+            }
+        }
+    });
+
+    // ランダム音楽
+    const randomMusic = (stage = 0, delay = 0, speed = 1) => {
+
+        const scale = (stage * 5) % 12;
+        const notes = [36]; // 最初はド固定
+        const penta = [36, 38, 40, 43, 45];
+        for(let i = 1; i < 5; i++) notes[i * 2] = penta[random(0, 5)]; // ペンタのどれかの音を1-4に入れる
+        for(let i = 5; i < 8; i++) notes[i * 2] = -1; // 5-7は休符を入れる
+        // 1-7をシャッフル
+        for(let i = 1; i < 8; i++) {
+            const j = random(i, 8);
+            [notes[i * 2], notes[j * 2]] = [notes[j * 2], notes[i * 2]]
+        }
+        for(let i = 0; i < 16; i++) {
+            if(notes[i] == null) notes[i] = -1;
+            if(notes[i] >= 0) notes[i] += scale;
+        }
+
+        audio.play(1, notes, delay, 0.125 / speed);
+        audio.play(1, notes, delay + 2 / speed, 0.125 / speed);
+        audio.play(1, notes, delay + 4 / speed, 0.125 / speed);
+        audio.play(1, notes, delay + 6 / speed, 0.125 / speed);
+    };
+
+    // ランダム効果音
+    const randomSound = (stage = 0, delay = 0, octave = 0) => {
+
+        const scale = (stage * 5) % 12;
+        const notes = [];
+        const penta = [48, 50, 52, 55, 57];
+        notes[0] = penta[random(0, 5)] + scale + octave * 12; // ペンタのどれかの音を入れる
+
+        audio.play(0, notes, delay, 0.05);
+    };
+
+
+    // ポインターを離した
+    canvas.addEventListener('pointerup', (event) => {
+        // タイトルをタッチ
+        if(state === 'title') {
+            state = 'ready';
+            stage = 0;
+            countdown = 2.999;
+        }
+        if(!audio.isStarted) {
+            audio.start(2);
         }
     });
 
@@ -516,7 +600,8 @@ const script = (event) => {
     {
         if (document.visibilityState === 'hidden') {
             pause = true;
-            prevTimestamp = 0;
+            prevTime = 0;
+            audio.stop();
         }
         if (document.visibilityState === 'visible') {
             pause = false;
@@ -530,8 +615,9 @@ const script = (event) => {
         event.preventDefault();
         return false;
     };
-    document.addEventListener('selectstart', cancel, { passive: false });
-    document.addEventListener('dblclick', cancel, { passive: false });
+    document.addEventListener('contextmenu', cancel, { passive: false }); // 右クリック禁止
+    document.addEventListener('dblclick', cancel, { passive: false }); // ダブルクリック禁止
+    document.addEventListener('touchstart', cancel, { passive: false }); // 小さなルーペ禁止
 };
 
 // 画像の読み込みが終わってから実行
