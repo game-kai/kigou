@@ -485,7 +485,7 @@ const script = (event) => {
     // キャンバスを押した
     canvas.addEventListener('pointerdown', (event) => {
         let c = null;
-        if(state === 'game' || state === 'clear') {
+        if(state === 'game' || state === 'clear' || state === 'end') {
             // 座標0-1
             const canvasRect = canvas.getBoundingClientRect();
             const x = (event.clientX - canvasRect.left) / canvasRect.width;
@@ -533,7 +533,7 @@ const script = (event) => {
                 randomSound(stage, 0, 0);
             }
         }
-        else if(state === 'clear') {
+        else if(state === 'clear' || state === 'end') {
             // 正解をもう一度押した
             if(kigou.array[c].char === kigou.goal.char) {
                 randomSound(stage, 0, 1);
