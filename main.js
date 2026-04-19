@@ -25,6 +25,7 @@ const script = (event) => {
     let state = 'title';
     let countdown = 0;
     let stage = 0;
+    let highscore = 0;
     const kigou = {
         div : 3,
         scroll: {
@@ -55,6 +56,7 @@ const script = (event) => {
             if(countdown <= 0) {
                 state = 'end';
                 countdown = 4.9;
+                if(stage > highscore) highscore = stage;
                 clean();
             }
         }
@@ -222,9 +224,10 @@ const script = (event) => {
         if(state === 'title') {
             for(let i = 0; i < 7; i++) drawKigou(i + 8 * 8, 0, 1 + i, 3);
             for(let i = 0; i < 5; i++) drawKigou(i + 9 * 8, 0, 2 + i, 6);
-        }
-        if(state === 'ready') {
-            drawKigou(Math.floor(countdown) + 11 * 8, 9, 8, 11); // カウントダウン
+            // ハイスコア
+            let col = 9;
+            drawKigou(Math.floor(highscore / 10) % 10 + 11 * 8, col, 7, 11); // 10の位
+            drawKigou(highscore % 10 + 11 * 8, col, 8, 11); // 1の位
         }
         if(state === 'clear' || state === 'game' || state === 'end') {
             // 探す記号群
@@ -237,27 +240,26 @@ const script = (event) => {
         }
         if(state === 'game') {
             drawKigou(kigou.goal.char, kigou.goal.color, 0, 11); // 目的の記号
-            for(let i = 0; i < 4; i++) drawKigou(3 + 8 * 8, 9, 2, 11); // を
-            for(let i = 0; i < 3; i++) drawKigou((4 + i) + 8 * 8, 9, 3 + i, 11); // さがせ
-            drawKigou(7 + 8 * 8, 9, 6, 11); // !
-
-            drawKigou(Math.floor(countdown) + 11 * 8, 9, 8, 11); // カウントダウン
+            for(let i = 0; i < 4; i++) drawKigou(3 + 8 * 8, 9, 1, 11); // を
+            for(let i = 0; i < 3; i++) drawKigou((4 + i) + 8 * 8, 9, 2 + i, 11); // さがせ
+            drawKigou(7 + 8 * 8, 9, 5, 11); // !
         }
         if(state === 'clear') {
             for(let i = 0; i < 3; i++) drawKigou(i + 5 + 9 * 8, 9, 0 + i, 11); // OK!
-            drawKigou(Math.floor(countdown) + 11 * 8, 9, 8, 11); // カウントダウン
+        }
+        if(state === 'ready' || state === 'game' || state === 'clear') {
+            drawKigou(Math.floor(countdown) + 11 * 8, 9, 4, 9); // カウントダウン
         }
         if(state === 'game' || state === 'clear' || state === 'end') {
-            let col = 0;
+            let col = kigou.goal.color;
             // ステージ番号
-            drawKigou(Math.floor(stage / 100) % 10 + 11 * 8, col, 3, 9); // ステージ番号100の位
-            drawKigou(Math.floor(stage / 10) % 10 + 11 * 8, col, 4, 9); // ステージ番号10の位
-            drawKigou(stage % 10 + 11 * 8, col, 5, 9); // ステージ番号1の位
+            drawKigou(Math.floor(stage / 10) % 10 + 11 * 8, col, 7, 11); // ステージ番号10の位
+            drawKigou(stage % 10 + 11 * 8, col, 8, 11); // ステージ番号1の位
         }
         if(state === 'end') {
             // for(let i = 0; i < 3; i++) drawKigou(i + 5 + 9 * 8, 0, 3 + i, 10); // END
-            for(let i = 0; i < 8; i++) drawKigou(i + 10 * 8, 9, i, 11); // TIMEOVER
-            drawKigou(7 + 8 * 8, 9, 8, 11); // !
+            for(let i = 0; i < 8; i++) drawKigou(i + 10 * 8, 9, i, 9); // TIMEOVER
+            drawKigou(7 + 8 * 8, 9, 8, 9); // !
         }
     };
 
@@ -465,6 +467,7 @@ const script = (event) => {
     canvas.addEventListener('pointerdown', (event) => {
         if(state === 'title') {
             state = 'ready';
+            stage = 0;
             countdown = 2.999;
         }
         else if(state === 'game') {
