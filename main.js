@@ -242,6 +242,7 @@ const script = (event) => {
             for(let i = 0; i < 5; i++) drawKigou(i + 9 * 8, 0, 2 + i, 6);
             // ハイスコア
             let col = 9;
+            drawKigou(Math.floor(highscore / 100) % 10 + 11 * 8, col, 6, 11); // 100の位
             drawKigou(Math.floor(highscore / 10) % 10 + 11 * 8, col, 7, 11); // 10の位
             drawKigou(highscore % 10 + 11 * 8, col, 8, 11); // 1の位
         }
@@ -256,9 +257,8 @@ const script = (event) => {
         }
         if(state === 'game') {
             drawKigou(kigou.goal.char, kigou.goal.color, 0, 11); // 目的の記号
-            for(let i = 0; i < 4; i++) drawKigou(3 + 8 * 8, 9, 1, 11); // を
-            for(let i = 0; i < 3; i++) drawKigou((4 + i) + 8 * 8, 9, 2 + i, 11); // さがせ
-            drawKigou(7 + 8 * 8, 9, 5, 11); // !
+            for(let i = 0; i < 4; i++) drawKigou(3 + 8 * 8, 9, 2, 11); // を
+            for(let i = 0; i < 3; i++) drawKigou((4 + i) + 8 * 8, 9, 3 + i, 11); // さがせ
         }
         if(state === 'clear') {
             for(let i = 0; i < 3; i++) drawKigou(i + 5 + 9 * 8, 9, 0 + i, 11); // OK!
@@ -269,6 +269,7 @@ const script = (event) => {
         if(state === 'game' || state === 'clear' || state === 'end') {
             let col = kigou.goal.color;
             // ステージ番号
+            drawKigou(Math.floor(stage / 100) % 10 + 11 * 8, col, 6, 11); // ステージ番号100の位
             drawKigou(Math.floor(stage / 10) % 10 + 11 * 8, col, 7, 11); // ステージ番号10の位
             drawKigou(stage % 10 + 11 * 8, col, 8, 11); // ステージ番号1の位
         }
