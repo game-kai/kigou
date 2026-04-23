@@ -300,7 +300,7 @@ const script = (event) => {
     // ランダム整数 mからnまで、lは除く
     const random = (m = 0, n = 8, l = null) => {
         if(l == null) return Math.floor((Math.random() * (n - m)) + m);
-        if(l != null) return Math.floor(((l - m + 1) + Math.random() * (n - m - 1)) % (n - m) + m);
+        if(l != null) return Math.floor(((l + 1) + Math.random() * (n - m - 1)) % (n - m) + m);
     };
 
     // ステージ開始
